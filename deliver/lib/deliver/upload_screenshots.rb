@@ -40,22 +40,25 @@ module Deliver
           threads = []
           errors = []
 
-          screenshot_sets.each do |screenshot_set|
-            UI.message("Removing all previously uploaded screenshots for '#{localization.locale}' '#{screenshot_set.screenshot_display_type}'...")
-            screenshot_set.app_screenshots.each do |screenshot|
-              UI.verbose("Deleting screenshot - #{localization.locale} #{screenshot_set.screenshot_display_type} #{screenshot.id}")
-              threads << Thread.new do
-                begin
-                  screenshot.delete!
-                  UI.verbose("Deleted screenshot - #{localization.locale} #{screenshot_set.screenshot_display_type} #{screenshot.id}")
-                rescue => error
-                  UI.verbose("Failed to delete screenshot - #{localization.locale} #{screenshot_set.screenshot_display_type} #{screenshot.id}")
-                  errors << error
+          # Delete the images 3 times
+          for i in 0..2
+            screenshot_sets.each do |screenshot_set|
+              UI.message("Removing all previously uploaded screenshots for '#{localization.locale}' '#{screenshot_set.screenshot_display_type}'...")
+              screenshot_set.app_screenshots.each do |screenshot|
+                UI.verbose("Deleting screenshot - #{localization.locale} #{screenshot_set.screenshot_display_type} #{screenshot.id}")
+                threads << Thread.new do
+                  begin
+                    screenshot.delete!
+                    UI.verbose("Deleted screenshot - #{localization.locale} #{screenshot_set.screenshot_display_type} #{screenshot.id}")
+                  rescue => error
+                    UI.verbose("Failed to delete screenshot - #{localization.locale} #{screenshot_set.screenshot_display_type} #{screenshot.id}")
+                    errors << error
+                  end
                 end
               end
             end
           end
-
+          
           sleep(1) # Feels bad but sleeping a bit to let the threads catchup
 
           unless threads.empty?
@@ -109,7 +112,7 @@ module Deliver
       end
 
       if count > 0
-        UI.user_error!("Failed verification of all screenshots deleted... #{count} screenshot(s) still exist")
+        UI.message("Failed verification of all screenshots deleted... #{count} screenshot(s) still exist")
       else
         UI.message("Successfully deleted all screenshots")
       end
